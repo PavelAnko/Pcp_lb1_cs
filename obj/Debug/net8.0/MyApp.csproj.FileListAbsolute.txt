@@ -12,3 +12,4 @@ C:\Users\Legion\Desktop\PCP\lab_1\lab_1c\MyApp\obj\Debug\net8.0\refint\MyApp.dll
 C:\Users\Legion\Desktop\PCP\lab_1\lab_1c\MyApp\obj\Debug\net8.0\MyApp.pdb
 C:\Users\Legion\Desktop\PCP\lab_1\lab_1c\MyApp\obj\Debug\net8.0\MyApp.genruntimeconfig.cache
 C:\Users\Legion\Desktop\PCP\lab_1\lab_1c\MyApp\obj\Debug\net8.0\ref\MyApp.dll
+C:\Users\Legion\Desktop\PCP\lab_1\lab_1c\MyApp\obj\Debug\net8.0\MyApp.sourcelink.json

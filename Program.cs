@@ -1,52 +1,82 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
-class Program
+namespace Company
 {
-    static int threadCount = 20;
-    static double step = 0.5;
-    static ManualResetEvent[] stopEvents = Array.Empty<ManualResetEvent>();
-    static ManualResetEvent startSignal = new ManualResetEvent(false); // для одночасного (синхроного) запуску 
-
-    static void Main()
+    class ControllerThread
     {
-        stopEvents = new ManualResetEvent[threadCount];
-        Thread[] threads = new Thread[threadCount];
-        Random rand = new Random();
+        private readonly ManualResetEvent[] stopEvents;
+        private readonly int[] stopTimes;
 
-        for (int i = 0; i < threadCount; i++)
+        public ControllerThread(ManualResetEvent[] stopEvents, int[] stopTimes)
         {
-            stopEvents[i] = new ManualResetEvent(false);  // ініціалізація кожного потоку 
-            int index = i;
-            int delay = rand.Next(3000, 10000); 
-
-            threads[i] = new Thread(() => CalculateSequence(index, step, stopEvents[index], delay));
-            threads[i].Start();
+            this.stopEvents = stopEvents;
+            this.stopTimes = stopTimes;
         }
-        startSignal.Set(); 
+
+        public void Start()
+        {
+            for (int i = 0; i < stopEvents.Length; i++)
+            {
+                int index = i;
+                int delay = stopTimes[i];
+                new Thread(() =>
+                {
+                    Thread.Sleep(delay);
+                    stopEvents[index].Set();
+                }).Start();
+            }
+        }
     }
 
-    static void CalculateSequence(int id, double step, ManualResetEvent stopEvent, int workTime)
+    class Program
     {
-        startSignal.WaitOne(); // чекає поки не буде дозволено старт
+        static int threadCount = 8;
+        static double step = 0.5;
+        static ManualResetEvent[] stopEvents = new ManualResetEvent[threadCount];
+        static ManualResetEvent startSignal = new ManualResetEvent(false);
+        static int[] workTimes = new int[threadCount];
 
-        double sum = 0;
-        int count = 0;
-        double current = 0;
-
-        int elapsed = 0;
-        int interval = 10;  // імітація навантаження або ж затримки
-
-        while (elapsed < workTime)
+        static void Main()
         {
-            sum += current;
-            current += step;
-            count++;
-            Thread.Sleep(interval);
-            elapsed += interval;
+            Thread[] threads = new Thread[threadCount];
+            Random rand = new Random();
+
+            for (int i = 0; i < threadCount; i++)
+            {
+                stopEvents[i] = new ManualResetEvent(false);
+                workTimes[i] = rand.Next(3000, 10000);
+
+                int index = i;
+                ManualResetEvent stopEvent = stopEvents[i];
+
+                threads[i] = new Thread(() => CalculateSequence(index, step, stopEvent));
+                threads[i].Start();
+            }
+
+            startSignal.Set();
+
+            ControllerThread controller = new ControllerThread(stopEvents, workTimes);
+            controller.Start();
         }
 
-        Console.WriteLine($"[Потік {id + 1}] Завершився після {workTime} мс. Сума: {sum}, Елементів: {count}");
-        // stopEvent.Set();
+        static void CalculateSequence(int id, double step, ManualResetEvent stopEvent)
+        {
+            startSignal.WaitOne();
+
+            double sum = 0;
+            int count = 0;
+            double current = 0;
+
+            while (!stopEvent.WaitOne(0))
+            {
+                sum += current;
+                current += step;
+                count++;
+            }
+
+            Console.WriteLine($"[Потік {id + 1}] Завершився. Сума: {sum}, Елементів: {count}");
+        }
     }
 }
